@@ -38,6 +38,9 @@ class repository {
      * @return array package name => (version => definition)
      */
     public static function get_packages(): array {
+        global $CFG;
+        require_once($CFG->libdir . '/filelib.php');
+
         $repourl = self::get_repourl();
         $cache = \cache::make('tool_camp', 'packages');
         $cachekey = 'packages_' . sha1($repourl);
@@ -121,13 +124,18 @@ class repository {
     }
 
     /**
-     * The configured repository base URL (https enforced).
+     * The configured repository base URL. HTTPS is enforced; plain http is
+     * permitted only while the site runs in developer debug mode, so a
+     * locally served repository can be tested. Artifact hashes are verified
+     * either way.
      *
      * @return string
      */
     public static function get_repourl(): string {
         $repourl = rtrim((string) get_config('tool_camp', 'repourl'), '/');
-        if ($repourl === '' || strpos($repourl, 'https://') !== 0) {
+        $ishttps = strpos($repourl, 'https://') === 0;
+        $isdevhttp = strpos($repourl, 'http://') === 0 && debugging('', DEBUG_DEVELOPER);
+        if ($repourl === '' || (!$ishttps && !$isdevhttp)) {
             throw new \moodle_exception('errornorepo', 'tool_camp', '', $repourl);
         }
         return $repourl;

@@ -31,6 +31,17 @@ Requires Moodle 4.5+. Alpha.
   the fetched metadata; the signed-metadata client lands with Phase 2)
 - Update notifications for already-installed plugins
 
+## Deployment notes (from live testing on Moodle 4.5.12)
+
+- **Moodle's cURL security applies to repository fetches.** Sites commonly
+  block private IP ranges (`curlsecurityblockedhosts`) and restrict outbound
+  ports to 80/443 (`curlsecurityallowedport`). A production camp repository
+  on public HTTPS:443 needs no exceptions; mirrors on non-standard ports or
+  internal networks require the site admin to allow them explicitly.
+- Plain-http repository URLs work only when the site is in developer debug
+  mode (for testing against a locally served repo). Artifact hashes are
+  verified in every mode.
+
 ## Settings
 
 Site administration → Plugins → Admin tools:
