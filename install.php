@@ -43,8 +43,10 @@ if (!$confirm) {
     ];
     echo $OUTPUT->confirm(
         get_string('confirminstall', 'tool_camp', $details),
-        new moodle_url('/admin/tool/camp/install.php',
-            ['package' => $package, 'confirm' => 1, 'sesskey' => sesskey()]),
+        new moodle_url(
+            '/admin/tool/camp/install.php',
+            ['package' => $package, 'confirm' => 1, 'sesskey' => sesskey()]
+        ),
         new moodle_url('/admin/tool/camp/index.php')
     );
     echo $OUTPUT->footer();
@@ -54,6 +56,9 @@ if (!$confirm) {
 \tool_camp\local\installer::install($package);
 
 // Hand over to the standard upgrade flow to run the new plugin's installation.
-redirect(new moodle_url('/admin/index.php'),
-    get_string('installok', 'tool_camp'), null,
-    \core\output\notification::NOTIFY_SUCCESS);
+redirect(
+    new moodle_url('/admin/index.php'),
+    get_string('installok', 'tool_camp'),
+    null,
+    \core\output\notification::NOTIFY_SUCCESS
+);

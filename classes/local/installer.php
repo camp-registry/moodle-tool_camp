@@ -34,7 +34,6 @@ namespace tool_camp\local;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class installer {
-
     /**
      * Install the policy-allowed version of a package.
      *

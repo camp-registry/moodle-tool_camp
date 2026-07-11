@@ -36,7 +36,7 @@ $installable = \tool_camp\local\repository::get_installable();
 
 if ($search !== '') {
     $needle = \core_text::strtolower($search);
-    $installable = array_filter($installable, function($definition, $name) use ($needle) {
+    $installable = array_filter($installable, function ($definition, $name) use ($needle) {
         $component = $definition['extra']['camp']['component'] ?? '';
         return strpos(\core_text::strtolower($name . ' ' . $component), $needle) !== false;
     }, ARRAY_FILTER_USE_BOTH);
@@ -64,8 +64,10 @@ if (empty($installable)) {
     ];
     foreach ($installable as $name => $definition) {
         $camp = $definition['extra']['camp'];
-        $installurl = new moodle_url('/admin/tool/camp/install.php',
-            ['package' => $name, 'sesskey' => sesskey()]);
+        $installurl = new moodle_url(
+            '/admin/tool/camp/install.php',
+            ['package' => $name, 'sesskey' => sesskey()]
+        );
         $supported = $camp['supported-moodle'];
         $table->data[] = [
             html_writer::tag('strong', s($camp['component'])) . html_writer::empty_tag('br')
@@ -74,9 +76,11 @@ if (empty($installable)) {
             'Tier ' . (int) $camp['tier'],
             s(implode(', ', $camp['labels'] ?? [])),
             s(reset($supported) . ' – ' . end($supported)),
-            html_writer::link($installurl,
+            html_writer::link(
+                $installurl,
                 get_string('installplugin', 'tool_camp', s($definition['version'])),
-                ['class' => 'btn btn-primary btn-sm']),
+                ['class' => 'btn btn-primary btn-sm']
+            ),
         ];
     }
     echo html_writer::table($table);
