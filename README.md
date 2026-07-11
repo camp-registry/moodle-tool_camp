@@ -1,0 +1,39 @@
+# tool_camp — the CAMP client for Moodle
+
+Stage 1 client plugin (RFC §6.2): lets site administrators browse a CAMP
+repository and install plugins through Moodle's own deployment machinery,
+with every download verified against the repository's published SHA-256
+before any file is written. No core changes required; installs once via
+standard ZIP upload.
+
+Requires Moodle 4.5+. Alpha.
+
+## How it works
+
+- Consumes the repository's Composer metadata (`packages.json`); the
+  camp-specific facts (trust tier, disclosure labels, supported Moodle
+  branches, publication time) ride along under `extra.camp`.
+- Site policy is enforced client-side: minimum trust tier (1 or 2) and an
+  optional release cooldown ("only offer releases older than N days",
+  RFC §4.4), plus filtering to the site's own Moodle branch.
+- Install flow: download to request-scoped temp → `hash_equals` the
+  published SHA-256 → `\core\update\code_manager::unzip_plugin_file()` →
+  redirect to the standard upgrade page. A hash mismatch aborts with
+  nothing deployed.
+- Privacy (RFC §4.6): requests carry no site or user identifiers; mirrors
+  see anonymous file downloads only.
+
+## Not yet implemented
+
+- Security advisory surfacing for installed plugins (needs the advisory
+  format, RFC §5.3)
+- TUF metadata verification client-side (currently trusts TLS + hash from
+  the fetched metadata; the signed-metadata client lands with Phase 2)
+- Update notifications for already-installed plugins
+
+## Settings
+
+Site administration → Plugins → Admin tools:
+- **Repository URL** — the CAMP repository or any mirror
+- **Minimum trust tier** — Tier 1 (source-verified) or Tier 2 (human-reviewed)
+- **Release cooldown** — sit out the first N hours/days of every release
