@@ -80,6 +80,7 @@ class advisories {
         $installed = self::installed_releases();
 
         $matches = [];
+        $seen = [];
         foreach (repository::get_repos() as $repo) {
             try {
                 $feed = self::fetch($repo);
@@ -95,7 +96,15 @@ class advisories {
                 }
                 $release = $installed[$component];
                 foreach ($records as $advisory) {
+                    // The same advisory served by several repositories
+                    // (e.g. a mirror) is one warning, attributed to the
+                    // highest-priority repository that carries it.
+                    $key = (($advisory['advisoryId'] ?? '') ?: ($advisory['title'] ?? '')) . '|' . $component;
+                    if (isset($seen[$key])) {
+                        continue;
+                    }
                     if (self::version_matches($release, (string) ($advisory['affectedVersions'] ?? ''))) {
+                        $seen[$key] = true;
                         $matches[] = [
                             'component' => $component,
                             'release' => $release,
@@ -113,7 +122,10 @@ class advisories {
      * Release strings of every installed plugin, keyed by component.
      *
      * The registry's release ledger records versions from $plugin->release,
-     * so that is the value advisories constrain against.
+     * so that is the value advisories constrain against. Only the first
+     * whitespace-separated token is kept — the common Moodle convention
+     * "1.1.0 (Build: 2025070116)" must match a "<=1.1.0" constraint, and
+     * the registry's Composer projection applies the same split.
      *
      * @return array component => release
      */
@@ -121,7 +133,7 @@ class advisories {
         $releases = [];
         foreach (\core_plugin_manager::instance()->get_plugins() as $plugins) {
             foreach ($plugins as $plugininfo) {
-                $release = trim((string) $plugininfo->release);
+                $release = explode(' ', trim((string) $plugininfo->release))[0];
                 if ($release !== '') {
                     $releases[$plugininfo->component] = $release;
                 }

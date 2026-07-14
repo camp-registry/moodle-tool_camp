@@ -74,16 +74,22 @@ class check_advisories extends \core\task\scheduled_task {
             return;
         }
 
-        $this->notify_admins($new);
-        set_config('notifiedadvisories', json_encode($notified), 'tool_camp');
+        if ($this->notify_admins($new)) {
+            set_config('notifiedadvisories', json_encode($notified), 'tool_camp');
+        } else {
+            // Nothing reached an administrator; leave the matches unmarked
+            // so the next run tries again rather than going silent.
+            mtrace('tool_camp: not marking advisories as notified; will retry next run.');
+        }
     }
 
     /**
      * Email every site administrator about newly matched advisories.
      *
      * @param array $matches from {@see advisories::affecting_installed}
+     * @return bool true if at least one email was sent
      */
-    protected function notify_admins(array $matches): void {
+    protected function notify_admins(array $matches): bool {
         global $SITE;
 
         $lines = [];
@@ -109,9 +115,17 @@ class check_advisories extends \core\task\scheduled_task {
             . "\n\n" . implode("\n\n", $lines) . "\n\n"
             . get_string('advisoryemailoutro', 'tool_camp');
 
+        $sent = 0;
+        $failed = 0;
         foreach (get_admins() as $admin) {
-            email_to_user($admin, \core_user::get_noreply_user(), $subject, $body);
+            if (email_to_user($admin, \core_user::get_noreply_user(), $subject, $body)) {
+                $sent++;
+            } else {
+                $failed++;
+            }
         }
-        mtrace('tool_camp: notified ' . count(get_admins()) . ' administrator(s).');
+        mtrace("tool_camp: notified $sent administrator(s)"
+            . ($failed ? ", $failed email(s) failed to send" : '') . '.');
+        return $sent > 0;
     }
 }
