@@ -70,7 +70,9 @@ class repository {
      * @return array package name => version definition (with 'version' key)
      */
     public static function get_installable(): array {
-        $mintier = (int) get_config('tool_camp', 'mintier');
+        // Tier 2 (source-verified) is the registry's installation floor (RFC §4.4);
+        // below it there is no verified artifact, whatever the stored setting says.
+        $mintier = max(2, (int) get_config('tool_camp', 'mintier'));
         $cooldown = (int) get_config('tool_camp', 'cooldown');
         $branch = self::current_branch();
 

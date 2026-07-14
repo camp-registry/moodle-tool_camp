@@ -46,10 +46,10 @@ if ($hassiteconfig) {
         'tool_camp/mintier',
         get_string('mintier', 'tool_camp'),
         get_string('mintier_desc', 'tool_camp'),
-        1,
+        2,
         [
-            1 => get_string('tier1', 'tool_camp'),
             2 => get_string('tier2', 'tool_camp'),
+            3 => get_string('tier3', 'tool_camp'),
         ]
     ));
 
