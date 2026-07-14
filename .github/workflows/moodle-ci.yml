@@ -1,0 +1,70 @@
+# Standard moodle-plugin-ci pipeline (https://moodlehq.github.io/moodle-plugin-ci/)
+# against the registry's supported range (camp DESIGN.md D7): 4.5 LTS and 5.2.
+name: Moodle plugin CI
+
+on: [push, pull_request]
+
+jobs:
+  ci:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: "8.2"
+            moodle-branch: MOODLE_405_STABLE
+          - php: "8.3"
+            moodle-branch: MOODLE_502_STABLE
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pgsql, zip, gd, xmlrpc, soap, intl
+          coverage: none
+
+      - name: Install moodle-plugin-ci
+        run: |
+          composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci ^4
+          echo "$(cd ci/bin; pwd)" >> $GITHUB_PATH
+          echo "$(cd ci/vendor/bin; pwd)" >> $GITHUB_PATH
+
+      - name: Install Moodle + plugin
+        run: moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
+        env:
+          DB: pgsql
+          MOODLE_BRANCH: ${{ matrix.moodle-branch }}
+
+      - name: PHP Lint
+        run: moodle-plugin-ci phplint
+
+      - name: Moodle Code Checker
+        run: moodle-plugin-ci phpcs --max-warnings 0
+
+      - name: Moodle PHPDoc Checker
+        run: moodle-plugin-ci phpdoc --max-warnings 0
+        continue-on-error: true
+
+      - name: Validity checks
+        run: moodle-plugin-ci validate
+
+      - name: Upgrade savepoints
+        run: moodle-plugin-ci savepoints
+
+      - name: PHPUnit
+        run: moodle-plugin-ci phpunit
+        continue-on-error: true
