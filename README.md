@@ -13,9 +13,14 @@ Requires Moodle 4.5+. Alpha.
 - Consumes the repository's Composer metadata (`packages.json`); the
   camp-specific facts (trust tier, disclosure labels, supported Moodle
   branches, publication time) ride along under `extra.camp`.
-- Site policy is enforced client-side: minimum trust tier (1 or 2) and an
-  optional release cooldown ("only offer releases older than N days",
-  RFC §4.4), plus filtering to the site's own Moodle branch.
+- Site policy is enforced client-side: minimum trust tier (2 source-verified
+  or 3 human-reviewed; below tier 2 nothing is installable, RFC §4.4) and an
+  optional release cooldown ("only offer releases older than N days"),
+  plus filtering to the site's own Moodle branch.
+- Security advisories (RFC §5.3): a scheduled task (every 6 hours) downloads
+  the repository's complete `security-advisories.json` feed and matches it
+  locally against the site's installed plugins — the repository never learns
+  what this site runs. New matches are emailed to site administrators once.
 - Install flow: download to request-scoped temp → `hash_equals` the
   published SHA-256 → `\core\update\code_manager::unzip_plugin_file()` →
   redirect to the standard upgrade page. A hash mismatch aborts with
@@ -25,10 +30,9 @@ Requires Moodle 4.5+. Alpha.
 
 ## Not yet implemented
 
-- Security advisory surfacing for installed plugins (needs the advisory
-  format, RFC §5.3)
 - TUF metadata verification client-side (currently trusts TLS + hash from
-  the fetched metadata; the signed-metadata client lands with Phase 2)
+  the fetched metadata; the signed-metadata client lands with Phase 2) —
+  this also covers the advisory feed, which today is trusted via TLS
 - Update notifications for already-installed plugins
 
 ## Deployment notes (from live testing on Moodle 4.5.12)
@@ -46,5 +50,5 @@ Requires Moodle 4.5+. Alpha.
 
 Site administration → Plugins → Admin tools:
 - **Repository URL** — the CAMP repository or any mirror
-- **Minimum trust tier** — Tier 1 (source-verified) or Tier 2 (human-reviewed)
+- **Minimum trust tier** — Tier 2 (source-verified) or Tier 3 (human-reviewed)
 - **Release cooldown** — sit out the first N hours/days of every release

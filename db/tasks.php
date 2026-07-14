@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version metadata for the camp client.
+ * Scheduled task definitions for the camp client.
  *
  * @package    tool_camp
  * @copyright  2026 the camp project
@@ -24,9 +24,17 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026071401;
-$plugin->requires  = 2024100700; // Moodle 4.5.
-$plugin->supported = [405, 502];
-$plugin->component = 'tool_camp';
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.3.0';
+$tasks = [
+    // Every six hours: malicious releases are typically detected and
+    // revoked within hours (RFC §4.4), so a daily check would leave an
+    // avoidably long exposure window.
+    [
+        'classname' => 'tool_camp\task\check_advisories',
+        'blocking' => 0,
+        'minute' => 'R',
+        'hour' => '*/6',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+    ],
+];
