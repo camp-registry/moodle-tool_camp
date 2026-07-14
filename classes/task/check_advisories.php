@@ -47,8 +47,8 @@ class check_advisories extends \core\task\scheduled_task {
      * Fetch the feed, match locally, notify administrators of new matches.
      */
     public function execute(): void {
-        if (trim((string) get_config('tool_camp', 'repourl')) === '') {
-            mtrace('tool_camp: no repository configured, skipping advisory check.');
+        if (!\tool_camp\local\repository::get_repos()) {
+            mtrace('tool_camp: no repositories configured, skipping advisory check.');
             return;
         }
 
@@ -63,7 +63,7 @@ class check_advisories extends \core\task\scheduled_task {
 
         $new = [];
         foreach ($matches as $match) {
-            $key = ($match['advisory']['advisoryId'] ?? '') . '|' . $match['component'];
+            $key = $match['repo'] . '|' . ($match['advisory']['advisoryId'] ?? '') . '|' . $match['component'];
             if (!in_array($key, $notified, true)) {
                 $new[] = $match;
                 $notified[] = $key;
@@ -97,6 +97,7 @@ class check_advisories extends \core\task\scheduled_task {
                 'title' => (string) ($advisory['title'] ?? ''),
                 'affected' => (string) ($advisory['affectedVersions'] ?? ''),
                 'link' => (string) ($advisory['link'] ?? ''),
+                'repo' => $match['repo'],
             ]);
         }
 

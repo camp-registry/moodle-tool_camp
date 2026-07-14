@@ -15,18 +15,29 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version metadata for the camp client.
+ * Upgrade steps for the camp client.
  *
  * @package    tool_camp
  * @copyright  2026 the camp project
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->version   = 2026071500;
-$plugin->requires  = 2024100700; // Moodle 4.5.
-$plugin->supported = [405, 502];
-$plugin->component = 'tool_camp';
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.4.0';
+/**
+ * Upgrade tool_camp.
+ *
+ * @param int $oldversion version being upgraded from
+ * @return bool
+ */
+function xmldb_tool_camp_upgrade($oldversion): bool {
+    if ($oldversion < 2026071500) {
+        // The single repourl setting became the ordered multi-repository
+        // list (RFC §6.3). Migrate the configured URL as the sole entry.
+        $repourl = trim((string) get_config('tool_camp', 'repourl'));
+        if ($repourl !== '' && trim((string) get_config('tool_camp', 'repos')) === '') {
+            set_config('repos', 'default|' . $repourl, 'tool_camp');
+        }
+        unset_config('repourl', 'tool_camp');
+        upgrade_plugin_savepoint(true, 2026071500, 'tool', 'camp');
+    }
+    return true;
+}

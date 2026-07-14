@@ -1,26 +1,36 @@
 # tool_camp — the CAMP client for Moodle
 
-Stage 1 client plugin (RFC §6.2): lets site administrators browse a CAMP
-repository and install plugins through Moodle's own deployment machinery,
-with every download verified against the repository's published SHA-256
-before any file is written. No core changes required; installs once via
-standard ZIP upload.
+Stage 1 client plugin (RFC §6.2): lets site administrators browse one or
+more CAMP-format repositories and install plugins through Moodle's own
+deployment machinery, with every download verified against the publishing
+repository's SHA-256 before any file is written. No core changes required;
+installs once via standard ZIP upload.
 
 Requires Moodle 4.5+. Alpha.
 
 ## How it works
 
-- Consumes the repository's Composer metadata (`packages.json`); the
+- Consumes each repository's Composer metadata (`packages.json`); the
   camp-specific facts (trust tier, disclosure labels, supported Moodle
   branches, publication time) ride along under `extra.camp`.
+- Multiple repositories (RFC §6.3), RPM-style: an ordered list — e.g. the
+  community registry, a marketplace, a partner's token-gated repository.
+  Component collisions resolve by priority order with shadowing shown in
+  the UI, and a component installed from a repository is only ever offered
+  from that repository again (source binding, recorded at install time) —
+  a higher version elsewhere is never an update. This forecloses
+  cross-repository dependency confusion. Commercial repositories are
+  supported via a per-repository bearer token.
 - Site policy is enforced client-side: minimum trust tier (2 source-verified
   or 3 human-reviewed; below tier 2 nothing is installable, RFC §4.4) and an
   optional release cooldown ("only offer releases older than N days"),
   plus filtering to the site's own Moodle branch.
 - Security advisories (RFC §5.3): a scheduled task (every 6 hours) downloads
-  the repository's complete `security-advisories.json` feed and matches it
-  locally against the site's installed plugins — the repository never learns
-  what this site runs. New matches are emailed to site administrators once.
+  every configured repository's complete `security-advisories.json` feed and
+  matches the union locally against the site's installed plugins — no
+  repository learns what this site runs, and warnings don't depend on which
+  repository a plugin came through. New matches are emailed to site
+  administrators once.
 - Install flow: download to request-scoped temp → `hash_equals` the
   published SHA-256 → `\core\update\code_manager::unzip_plugin_file()` →
   redirect to the standard upgrade page. A hash mismatch aborts with
@@ -49,6 +59,13 @@ Requires Moodle 4.5+. Alpha.
 ## Settings
 
 Site administration → Plugins → Admin tools:
-- **Repository URL** — the CAMP repository or any mirror
-- **Minimum trust tier** — Tier 2 (source-verified) or Tier 3 (human-reviewed)
+- **Repositories** — one per line, highest priority first:
+  `name|https://url` with optional `|token=…` (commercial repositories)
+  and `|mintier=N` (per-repository tier override). Any mirror URL works —
+  artifacts are hash-verified.
+- **Minimum trust tier** — site default: Tier 2 (source-verified) or
+  Tier 3 (human-reviewed)
 - **Release cooldown** — sit out the first N hours/days of every release
+
+Upgrading from a single-repository version migrates the old Repository URL
+setting to a `default|<url>` line automatically.

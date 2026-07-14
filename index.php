@@ -57,6 +57,7 @@ if (empty($installable)) {
     $table->head = [
         get_string('colplugin', 'tool_camp'),
         get_string('colversion', 'tool_camp'),
+        get_string('colsource', 'tool_camp'),
         get_string('coltier', 'tool_camp'),
         get_string('collabels', 'tool_camp'),
         get_string('colmoodle', 'tool_camp'),
@@ -69,10 +70,24 @@ if (empty($installable)) {
             ['package' => $name, 'sesskey' => sesskey()]
         );
         $supported = $camp['supported-moodle'];
+        $source = s($definition['_camprepo'] ?? '');
+        if (!empty($definition['_campshadowed'])) {
+            // Never a silent choice (RFC §6.3): show when other configured
+            // repositories also offer this component.
+            $source .= html_writer::empty_tag('br') . html_writer::tag(
+                'small',
+                get_string(
+                    'alsoavailablefrom',
+                    'tool_camp',
+                    s(implode(', ', $definition['_campshadowed']))
+                )
+            );
+        }
         $table->data[] = [
             html_writer::tag('strong', s($camp['component'])) . html_writer::empty_tag('br')
                 . html_writer::tag('small', s($name)),
             s($definition['version']),
+            $source,
             'Tier ' . (int) $camp['tier'],
             s(implode(', ', $camp['labels'] ?? [])),
             s(reset($supported) . ' – ' . end($supported)),

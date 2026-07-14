@@ -34,12 +34,12 @@ if ($hassiteconfig) {
     $settings = new admin_settingpage('toolcampsettings', get_string('pluginname', 'tool_camp'));
     $ADMIN->add('tools', $settings);
 
-    $settings->add(new admin_setting_configtext(
-        'tool_camp/repourl',
-        get_string('repourl', 'tool_camp'),
-        get_string('repourl_desc', 'tool_camp'),
+    $settings->add(new admin_setting_configtextarea(
+        'tool_camp/repos',
+        get_string('repos', 'tool_camp'),
+        get_string('repos_desc', 'tool_camp'),
         '',
-        PARAM_URL
+        PARAM_RAW
     ));
 
     $settings->add(new admin_setting_configselect(

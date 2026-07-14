@@ -36,18 +36,21 @@ namespace tool_camp\local;
  */
 class advisories {
     /**
-     * Fetch the repository's advisory feed.
+     * Fetch one repository's advisory feed.
      *
+     * @param array $repo one entry from {@see repository::get_repos}
      * @return array advisory records keyed by Composer package name
      */
-    public static function fetch(): array {
+    public static function fetch(array $repo): array {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
 
-        $repourl = repository::get_repourl();
-        $json = download_file_content($repourl . '/security-advisories.json');
+        $json = download_file_content(
+            $repo['url'] . '/security-advisories.json',
+            repository::request_headers($repo)
+        );
         if ($json === false) {
-            throw new \moodle_exception('errornorepo', 'tool_camp', '', $repourl);
+            throw new \moodle_exception('errornorepo', 'tool_camp', '', $repo['url']);
         }
         $decoded = json_decode($json, true);
         if (!is_array($decoded) || !isset($decoded['advisories']) || !is_array($decoded['advisories'])) {
@@ -57,32 +60,49 @@ class advisories {
     }
 
     /**
-     * Advisories in the feed that affect a plugin installed on this site.
+     * Advisories from every configured repository that affect a plugin
+     * installed on this site.
+     *
+     * Feeds union across repositories (RFC §6.3): a warning should not
+     * depend on which repository a plugin came through, so every feed is
+     * matched against every installed plugin. An unreachable repository is
+     * skipped so one storefront being down cannot suppress another's
+     * warnings.
      *
      * A plugin matches when its frankenstyle component is installed and its
      * release string satisfies the advisory's affectedVersions constraint.
      * Plugins that declare no release string cannot be matched and are
      * skipped.
      *
-     * @return array of ['component', 'release', 'advisory' => feed record]
+     * @return array of ['component', 'release', 'repo', 'advisory' => feed record]
      */
     public static function affecting_installed(): array {
         $installed = self::installed_releases();
 
         $matches = [];
-        foreach (self::fetch() as $package => $records) {
-            $component = self::component_from_package($package);
-            if ($component === null || !isset($installed[$component])) {
+        foreach (repository::get_repos() as $repo) {
+            try {
+                $feed = self::fetch($repo);
+            } catch (\moodle_exception $e) {
+                debugging('tool_camp: advisory feed for repository ' . $repo['name']
+                    . ' unavailable: ' . $e->getMessage(), DEBUG_DEVELOPER);
                 continue;
             }
-            $release = $installed[$component];
-            foreach ($records as $advisory) {
-                if (self::version_matches($release, (string) ($advisory['affectedVersions'] ?? ''))) {
-                    $matches[] = [
-                        'component' => $component,
-                        'release' => $release,
-                        'advisory' => $advisory,
-                    ];
+            foreach ($feed as $package => $records) {
+                $component = self::component_from_package($package);
+                if ($component === null || !isset($installed[$component])) {
+                    continue;
+                }
+                $release = $installed[$component];
+                foreach ($records as $advisory) {
+                    if (self::version_matches($release, (string) ($advisory['affectedVersions'] ?? ''))) {
+                        $matches[] = [
+                            'component' => $component,
+                            'release' => $release,
+                            'repo' => $repo['name'],
+                            'advisory' => $advisory,
+                        ];
+                    }
                 }
             }
         }

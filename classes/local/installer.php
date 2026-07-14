@@ -59,9 +59,12 @@ class installer {
             throw new \moodle_exception('errornotwritable', 'tool_camp', '', s($targetdir));
         }
 
+        $repo = repository::get_repos()[$definition['_camprepo']] ?? null;
+        $headers = $repo !== null ? repository::request_headers($repo) : null;
+
         $tempdir = make_request_directory();
         $zipfile = $tempdir . '/package.zip';
-        if (!download_file_content($definition['dist']['url'], null, null, false, 300, 20, false, $zipfile)) {
+        if (!download_file_content($definition['dist']['url'], $headers, null, false, 300, 20, false, $zipfile)) {
             throw new \moodle_exception('errornorepo', 'tool_camp', '', s($definition['dist']['url']));
         }
 
@@ -74,6 +77,10 @@ class installer {
 
         $codemanager = new \core\update\code_manager();
         $codemanager->unzip_plugin_file($zipfile, $targetdir, $name);
+
+        // Source binding (RFC §6.3): from now on only the repository this
+        // component came from may offer it, until an admin re-pins it.
+        repository::bind($component, $definition['_camprepo']);
 
         purge_all_caches();
         return $component;
