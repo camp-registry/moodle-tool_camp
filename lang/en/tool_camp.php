@@ -48,6 +48,7 @@ $string['noplugins'] = 'No installable plugins match the current policy (check t
 $string['colplugin'] = 'Plugin';
 $string['colsource'] = 'Source';
 $string['alsoavailablefrom'] = 'also in: {$a}';
+$string['movedto'] = 'moved — new versions publish at {$a}';
 $string['colversion'] = 'Newest allowed version';
 $string['coltier'] = 'Tier';
 $string['collabels'] = 'Disclosure';

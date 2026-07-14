@@ -83,6 +83,16 @@ if (empty($installable)) {
                 )
             );
         }
+        if (!empty($camp['moved-to'])) {
+            // Successor pointer (RFC §6.3): the listing's repository says
+            // new versions publish elsewhere; following it is the admin's
+            // explicit choice (add the repo, re-pin the component).
+            $source .= html_writer::empty_tag('br') . html_writer::tag(
+                'small',
+                get_string('movedto', 'tool_camp', s($camp['moved-to'])),
+                ['class' => 'text-warning']
+            );
+        }
         $table->data[] = [
             html_writer::tag('strong', s($camp['component'])) . html_writer::empty_tag('br')
                 . html_writer::tag('small', s($name)),
