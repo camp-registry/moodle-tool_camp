@@ -22,9 +22,11 @@ Requires Moodle 4.5+. Alpha.
   cross-repository dependency confusion. Commercial repositories are
   supported via a per-repository bearer token.
 - Site policy is enforced client-side: minimum trust tier (2 source-verified
-  or 3 human-reviewed; below tier 2 nothing is installable, RFC §4.4) and an
-  optional release cooldown ("only offer releases older than N days"),
-  plus filtering to the site's own Moodle branch.
+  or 3 human-reviewed; below tier 2 nothing is installable, RFC §4.4), a
+  minimum release maturity (stable by default; release candidates, betas
+  and alphas only when the site opts in), an optional release cooldown
+  ("only offer releases older than N days"), plus filtering to the site's
+  own Moodle branch.
 - Security advisories (RFC §5.3): a scheduled task (every 6 hours) downloads
   every configured repository's complete `security-advisories.json` feed and
   matches the union locally against the site's installed plugins — no
@@ -61,10 +63,14 @@ Requires Moodle 4.5+. Alpha.
 Site administration → Plugins → Admin tools:
 - **Repositories** — one per line, highest priority first:
   `name|https://url` with optional `|token=…` (commercial repositories)
-  and `|mintier=N` (per-repository tier override). Any mirror URL works —
-  artifacts are hash-verified.
+  `|mintier=N` (per-repository tier override) and `|minstability=…`
+  (per-repository maturity override, e.g. a staging repository that should
+  offer betas). Any mirror URL works — artifacts are hash-verified.
 - **Minimum trust tier** — site default: Tier 2 (source-verified) or
   Tier 3 (human-reviewed)
+- **Minimum release maturity** — stable only (default), or down to release
+  candidates, betas or alphas; a pre-release that is offered is marked as
+  such in the catalogue
 - **Release cooldown** — sit out the first N hours/days of every release
 
 Upgrading from a single-repository version migrates the old Repository URL

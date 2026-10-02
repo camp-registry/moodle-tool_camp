@@ -48,13 +48,14 @@ class repository {
      * The configured repositories, in priority order.
      *
      * Parsed from the tool_camp/repos setting: one repository per line,
-     * "name|https://url" with optional "|token=..." and "|mintier=N"
+     * "name|https://url" with optional "|token=...", "|mintier=N" and
+     * "|minstability=stable|rc|beta|alpha"
      * fields. Blank lines and lines starting with # are ignored, as are
      * malformed lines (with a developer debugging note). HTTPS is
      * enforced; plain http is permitted only in developer debug mode so a
      * locally served repository can be tested.
      *
-     * @return array repository name => ['name', 'url', 'token', 'mintier']
+     * @return array repository name => ['name', 'url', 'token', 'mintier', 'minstability']
      */
     public static function get_repos(): array {
         $repos = [];
@@ -75,12 +76,18 @@ class repository {
                 debugging('tool_camp: ignoring non-https repository line: ' . $line, DEBUG_DEVELOPER);
                 continue;
             }
-            $repo = ['name' => $parts[0], 'url' => $url, 'token' => '', 'mintier' => 0];
+            $repo = ['name' => $parts[0], 'url' => $url, 'token' => '', 'mintier' => 0,
+                'minstability' => ''];
             foreach (array_slice($parts, 2) as $option) {
                 if (strpos($option, 'token=') === 0) {
                     $repo['token'] = substr($option, strlen('token='));
                 } else if (strpos($option, 'mintier=') === 0) {
                     $repo['mintier'] = (int) substr($option, strlen('mintier='));
+                } else if (strpos($option, 'minstability=') === 0) {
+                    $value = strtolower(substr($option, strlen('minstability=')));
+                    if (isset(self::MATURITY_RANK[$value])) {
+                        $repo['minstability'] = $value;
+                    }
                 }
             }
             if (!isset($repos[$repo['name']])) {
@@ -129,14 +136,32 @@ class repository {
         return $packages;
     }
 
+    /** Release maturity, least to most mature; a record without the field is stable. */
+    const MATURITY_RANK = ['alpha' => 0, 'beta' => 1, 'rc' => 2, 'stable' => 3];
+
+    /**
+     * Whether a release of the given maturity may be offered under a policy floor.
+     *
+     * @param string $maturity the record's extra.camp.maturity (missing = stable)
+     * @param string $floor the policy's minimum: stable, rc, beta or alpha
+     * @return bool
+     */
+    public static function maturity_allowed(string $maturity, string $floor): bool {
+        $rank = self::MATURITY_RANK[strtolower($maturity)] ?? self::MATURITY_RANK['stable'];
+        $min = self::MATURITY_RANK[$floor] ?? self::MATURITY_RANK['stable'];
+        return $rank >= $min;
+    }
+
     /**
      * The newest version of each component that this site's policy allows,
      * merged across all configured repositories.
      *
      * Policy filters per repository: minimum trust tier (the repository's
      * own mintier= override, else the site default; never below the
-     * registry's tier-2 installation floor, RFC §4.4), release cooldown,
-     * and Moodle branch support. Cross-repository rules: a component bound
+     * registry's tier-2 installation floor, RFC §4.4), minimum release
+     * maturity (minstability= override, else the site default; stable unless
+     * the site opts in to rc, beta or alpha), release cooldown, and Moodle
+     * branch support. Cross-repository rules: a component bound
      * by a previous installation is only offered from its bound
      * repository; otherwise the highest-priority repository offering an
      * eligible version wins. Every offered definition is annotated with
@@ -149,6 +174,10 @@ class repository {
         $repos = self::get_repos();
         $bindings = self::get_bindings();
         $sitemintier = (int) get_config('tool_camp', 'mintier');
+        $sitestability = (string) get_config('tool_camp', 'minstability');
+        if (!isset(self::MATURITY_RANK[$sitestability])) {
+            $sitestability = 'stable';
+        }
         $cooldown = (int) get_config('tool_camp', 'cooldown');
         $branch = self::current_branch();
 
@@ -161,6 +190,9 @@ class repository {
             // (RFC §4.4); below it there is no verified artifact, whatever
             // any setting says.
             $mintier = max(2, $repo['mintier'] > 0 ? $repo['mintier'] : $sitemintier);
+            // Pre-releases are offered only on opt-in: the site setting, or
+            // the repository's own minstability= override.
+            $minstability = $repo['minstability'] !== '' ? $repo['minstability'] : $sitestability;
             try {
                 $packages = self::get_packages($repo);
             } catch (\moodle_exception $e) {
@@ -181,6 +213,9 @@ class repository {
                         continue;
                     }
                     if (!in_array($branch, $camp['supported-moodle'] ?? [], true)) {
+                        continue;
+                    }
+                    if (!self::maturity_allowed($camp['maturity'] ?? 'stable', $minstability)) {
                         continue;
                     }
                     if ($cooldown > 0) {

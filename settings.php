@@ -53,6 +53,19 @@ if ($hassiteconfig) {
         ]
     ));
 
+    $settings->add(new admin_setting_configselect(
+        'tool_camp/minstability',
+        get_string('minstability', 'tool_camp'),
+        get_string('minstability_desc', 'tool_camp'),
+        'stable',
+        [
+            'stable' => get_string('maturity_stable', 'tool_camp'),
+            'rc' => get_string('maturity_rc', 'tool_camp'),
+            'beta' => get_string('maturity_beta', 'tool_camp'),
+            'alpha' => get_string('maturity_alpha', 'tool_camp'),
+        ]
+    ));
+
     $settings->add(new admin_setting_configduration(
         'tool_camp/cooldown',
         get_string('cooldown', 'tool_camp'),

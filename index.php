@@ -93,10 +93,21 @@ if (empty($installable)) {
                 ['class' => 'text-warning']
             );
         }
+        $version = s($definition['version']);
+        $maturity = strtolower((string) ($camp['maturity'] ?? 'stable'));
+        if ($maturity !== 'stable') {
+            // A pre-release is only here because the site opted in; say so
+            // rather than leaving it to the version string.
+            $version .= html_writer::empty_tag('br') . html_writer::tag(
+                'small',
+                get_string('prerelease', 'tool_camp', s($maturity)),
+                ['class' => 'text-warning']
+            );
+        }
         $table->data[] = [
             html_writer::tag('strong', s($camp['component'])) . html_writer::empty_tag('br')
                 . html_writer::tag('small', s($name)),
-            s($definition['version']),
+            $version,
             $source,
             'Tier ' . (int) $camp['tier'],
             s(implode(', ', $camp['labels'] ?? [])),
