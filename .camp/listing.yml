@@ -1,0 +1,32 @@
+# camp listing manifest: the descriptive content for this plugin's page on
+# camp-registry.org. Edit freely and commit; camp ingests this file at each
+# tagged release. Schema: https://camp-registry.org/schema/listing.schema.json
+name: CAMP plugin repository
+summary: Browse and install verified Moodle plugins from CAMP repositories, with site policy controls and security advisory checks.
+description: |
+  tool_camp is the CAMP client for Moodle: an admin tool that lets site
+  administrators browse one or more CAMP-format plugin repositories and
+  install plugins through Moodle's own deployment machinery. Every download
+  is verified against the SHA-256 the repository published before any file
+  is written. No core changes are required.
+
+  - Reads each repository's Composer metadata (packages.json); trust tier,
+    disclosure labels, supported Moodle branches and release maturity ride
+    along in the camp block.
+  - Multiple repositories in priority order, with a per-repository access
+    token for commercial repositories and source binding so a component is
+    only ever updated from the repository it was installed from.
+  - Site policy enforced client-side: minimum trust tier (tier 2
+    source-verified is the floor), minimum release maturity (stable by
+    default; release candidates, betas and alphas on opt-in), and a release
+    cooldown.
+  - A scheduled task checks published security advisories against installed
+    plugins and emails administrators about affected ones.
+
+  Requires Moodle 4.5 or later. Alpha.
+labels:
+  - fully-free
+category: administration
+links:
+  docs: https://github.com/camp-registry/moodle-tool_camp#readme
+  issues: https://github.com/camp-registry/moodle-tool_camp/issues
