@@ -70,7 +70,8 @@ class installer {
 
         // The trust anchor: the artifact must match the hash the repository
         // published (and signs). A mirror or MITM cannot alter it undetected.
-        if (!hash_equals($definition['dist']['shasum'], hash_file('sha256', $zipfile))) {
+        $expected = (string) ($definition['extra']['camp']['zip-sha256'] ?? '');
+        if ($expected === '' || !hash_equals($expected, hash_file('sha256', $zipfile))) {
             @unlink($zipfile);
             throw new \moodle_exception('errorhash', 'tool_camp');
         }

@@ -224,7 +224,9 @@ class repository {
                             continue;
                         }
                     }
-                    if (empty($definition['dist']['url']) || empty($definition['dist']['shasum'])) {
+                    // The SHA-256 rides in extra.camp (Composer's dist.shasum
+                    // is SHA-1 only, so the feed stopped writing it there).
+                    if (empty($definition['dist']['url']) || empty($camp['zip-sha256'])) {
                         continue;
                     }
                     if ($best === null || version_compare($definition['version'], $best['version'], '>')) {
