@@ -140,6 +140,30 @@ class repository {
     const MATURITY_RANK = ['alpha' => 0, 'beta' => 1, 'rc' => 2, 'stable' => 3];
 
     /**
+     * Is version definition $a newer than $b?
+     *
+     * The plugin's own $plugin->version (extra.camp.moodle-version) is the
+     * authority, as it is for Moodle's upgrade; the version string breaks
+     * ties with a leading "v" stripped first. PHP's version_compare ranks
+     * any "v"-prefixed string below any bare one, and the feed carries
+     * both forms (tags are the author's), so comparing raw strings offered
+     * "0.5.0-alpha1" over "v0.6.1".
+     *
+     * @param array $a version definition from packages.json
+     * @param array $b version definition from packages.json
+     * @return bool
+     */
+    public static function is_newer(array $a, array $b): bool {
+        $ma = (int) ($a['extra']['camp']['moodle-version'] ?? 0);
+        $mb = (int) ($b['extra']['camp']['moodle-version'] ?? 0);
+        if ($ma && $mb && $ma !== $mb) {
+            return $ma > $mb;
+        }
+        return version_compare(ltrim((string) $a['version'], 'vV'),
+            ltrim((string) $b['version'], 'vV'), '>');
+    }
+
+    /**
      * Whether a release of the given maturity may be offered under a policy floor.
      *
      * @param string $maturity the record's extra.camp.maturity (missing = stable)
@@ -229,7 +253,7 @@ class repository {
                     if (empty($definition['dist']['url']) || empty($camp['zip-sha256'])) {
                         continue;
                     }
-                    if ($best === null || version_compare($definition['version'], $best['version'], '>')) {
+                    if ($best === null || self::is_newer($definition, $best)) {
                         $best = $definition;
                     }
                 }
