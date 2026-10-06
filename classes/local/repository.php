@@ -159,8 +159,9 @@ class repository {
         if ($ma && $mb && $ma !== $mb) {
             return $ma > $mb;
         }
-        return version_compare(ltrim((string) $a['version'], 'vV'),
-            ltrim((string) $b['version'], 'vV'), '>');
+        $va = ltrim((string) $a['version'], 'vV');
+        $vb = ltrim((string) $b['version'], 'vV');
+        return version_compare($va, $vb, '>');
     }
 
     /**
